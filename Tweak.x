@@ -15,7 +15,7 @@
 
     NSArray *shortsToRemove = @[@"shorts_shelf.eml", @"shorts_video_cell.eml", @"6Shorts", @"eml.shorts-shelf"];
     for (NSString *shorts in shortsToRemove) {
-        if (HideShortsSection() && [description containsString:shorts] && ![description containsString:@"history*"]) {
+        if ([description containsString:shorts] && ![description containsString:@"history*"]) {
             return nil;
         }
     }
@@ -29,12 +29,12 @@
 - (void)layoutSubviews {
     %orig;
 
-    if (HideNoti()) self.notificationButton.hidden = YES;
-    if (HideSearch()) self.searchButton.hidden = YES;
+    self.notificationButton.hidden = YES;
+    // if (HideSearch()) self.searchButton.hidden = YES;
 
     for (UIView *subview in self.subviews) {
         // if (NoVoiceSearch() && [subview.accessibilityLabel isEqualToString:NSLocalizedString(@"search.voice.access", nil)]) subview.hidden = YES;
-        if (NoCast() && [subview.accessibilityIdentifier isEqualToString:@"id.mdx.playbackroute.button"]) subview.hidden = YES;
+        if ([subview.accessibilityIdentifier isEqualToString:@"id.mdx.playbackroute.button"]) subview.hidden = YES;
     }
 }
 %end
@@ -42,28 +42,28 @@
 %hook YTSearchViewController
 - (void)viewDidLoad {
     %orig;
-    if (NoVoiceSearch()) [self setValue:@(NO) forKey:@"_isVoiceSearchAllowed"];
+    [self setValue:@(NO) forKey:@"_isVoiceSearchAllowed"];
 }
-- (void)setSuggestions:(id)arg1 { if !(NoSearchHistory()) %orig; }
+- (void)setSuggestions:(id)arg1 {}
 %end
 
 %hook YTPersonalizedSuggestionsCacheProvider
-- (id)activeCache { return NoSearchHistory() ? nil : %orig; }
+- (id)activeCache { return nil; }
 %end
 
 // Hide Subbar
 %hook YTMySubsFilterHeaderView
-- (void)setChipFilterView:(id)arg1 { if !(NoSubbar()) %orig; }
+- (void)setChipFilterView:(id)arg1 {}
 %end
 
 %hook YTHeaderContentComboView
-- (void)enableSubheaderBarWithView:(id)arg1 { if !(NoSubbar()) %orig; }
-- (void)setFeedHeaderScrollMode:(int)arg1 { NoSubbar() ? %orig(0) : %orig; }
+- (void)enableSubheaderBarWithView:(id)arg1 {}
+- (void)setFeedHeaderScrollMode:(int)arg1 { %orig(0); }
 %end
 
 %hook YTChipCloudCell
 - (void)layoutSubviews {
-    if (self.superview && NoSubbar()) {
+    if (self.superview) {
         [self removeFromSuperview];
     } %orig;
 }
@@ -71,28 +71,26 @@
 
 %hook YTMainAppControlsOverlayView
 // Hide Autoplay Switch
-- (void)setAutoplaySwitchButtonRenderer:(id)arg1 { if !(HideAutoPlay()) %orig; }
+- (void)setAutoplaySwitchButtonRenderer:(id)arg1 {}
 
 // Hide Subs Button
-- (void)setClosedCaptionsOrSubtitlesButtonAvailable:(BOOL)arg1 { HideCaptions() ? %orig(NO) : %orig; }
+- (void)setClosedCaptionsOrSubtitlesButtonAvailable:(BOOL)arg1 { %orig(NO); }
 
 // - (void)setVoiceOverEnabled:(BOOL)arg1
+
 // Hide YouTube Music button
-- (void)setYoutubeMusicButton:(id)arg1 { if !(HideYTMButton()) %orig; }
+- (void)setYoutubeMusicButton:(id)arg1 {}
 %end
 
 // Prevent YouTube from asking to update the app
-%group Upgrade
 %hook YTGlobalConfig
 - (BOOL)shouldBlockUpgradeDialog { return YES; }
 - (BOOL)shouldShowUpgradeDialog { return NO; }
 - (BOOL)shouldShowUpgrade { return NO; }
 - (BOOL)shouldForceUpgrade { return NO; }
 %end
-%end
 
 // Prevent YouTube from asking "Are you there?"
-%group AreYouThere
 %hook YTColdConfig
 - (BOOL)enableYouthereCommandsOnIos { return NO; }
 %end
@@ -106,8 +104,8 @@
 - (BOOL)shouldShowYouTherePrompt { return NO; }
 - (void)showYouTherePrompt {}
 %end
-%end
 
+/*
 %group SlowMiniPlayer
 %hook YTColdConfig
 - (BOOL)enableIosFloatingMiniplayerDoubleTapToResize { return NO; }
@@ -123,17 +121,17 @@
 - (BOOL)enableIosFloatingMiniplayer { return NO; }
 %end
 %end
+*/
 
 // Disables Snackbar
-%group SnackBar
 %hook GOOHUDManagerInternal
 - (id)sharedInstance { return nil; }
 - (void)showMessageMainThread:(id)arg {}
 - (void)activateOverlay:(id)arg {}
 - (void)displayHUDViewForMessage:(id)arg {}
 %end
-%end
 
+/*
 // Try to disable Shorts PiP
 %group DisablesShortsPiP
 %hook YTColdConfig
@@ -157,70 +155,75 @@
 - (void)switchToPictureInPicture {}
 %end
 %end
+*/
 
 // Remove Dark Background in Overlay
 %hook YTMainAppVideoPlayerOverlayView
-- (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 { NoDarkBackGround() ? %orig(NO, arg2) : %orig; }
+- (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 { %orig(NO, arg2); }
 %end
 
 // No Endscreen Cards
 %hook YTCreatorEndscreenView
-- (void)setHidden:(BOOL)arg1 { NoEndScreen() ? %orig(YES) : %orig; }
-- (void)setHoverCardHidden:(BOOL)arg { NoEndScreen() ? %orig(YES) : %orig; }
-- (void)setHoverCardRenderer:(id)arg { if !(NoEndScreen()) %orig; }
+- (void)setHidden:(BOOL)arg1 { %orig(YES); }
+- (void)setHoverCardHidden:(BOOL)arg { %orig(YES); }
+- (void)setHoverCardRenderer:(id)arg {}
 %end
 
+/*
 // Disable Fullscreen Actions
 %hook YTFullscreenActionsView
-- (BOOL)enabled { return NoFSActions() ? NO : %orig; }
-- (void)setEnabled:(BOOL)arg1 { NoFSActions() ? %orig(NO) : %orig; }
+- (BOOL)enabled { return NO; }
+- (void)setEnabled:(BOOL)arg1 { %orig(NO); }
 %end
+*/
 
 %hook YTInlinePlayerBarContainerView
-- (void)setPlayerBarAlpha:(CGFloat)alpha { PersistentProgressBar() ? %orig(1.0) : %orig; }
+- (void)setPlayerBarAlpha:(CGFloat)alpha { %orig(1.0); }
 %end
 
 // Remove Watermarks
 %hook YTAnnotationsViewController
-- (void)loadFeaturedChannelWatermark { if (!NoWatermarks()) %orig; }
+- (void)loadFeaturedChannelWatermark {}
 %end
 
 %hook YTMainAppVideoPlayerOverlayView
-- (BOOL)isWatermarkEnabled { return NoWatermarks() ? NO : %orig; }
-- (void)setWatermarkEnabled:(BOOL)arg { NoWatermarks() ? %orig(NO) : %orig; }
+- (BOOL)isWatermarkEnabled { return NO; }
+- (void)setWatermarkEnabled:(BOOL)arg { %orig(NO); }
 %end
 
+/*
 // Forcibly Enable Miniplayer
 %hook YTWatchMiniBarViewController
-- (void)updateMiniBarPlayerStateFromRenderer { if (!ForceMiniPLayer()) %orig; }
+- (void)updateMiniBarPlayerStateFromRenderer {}
 %end
 
 %hook YTWatchFloatingMiniplayerViewController
-- (void)updateMiniBarPlayerStateFromRenderer { if (!ForceMiniPLayer()) %orig; }
+- (void)updateMiniBarPlayerStateFromRenderer {}
 %end
 
 // Portrait Fullscreen
 %hook YTWatchViewController
-- (unsigned long long)allowedFullScreenOrientations { return PortraitFullscreen() ? UIInterfaceOrientationMaskAllButUpsideDown : %orig; }
+- (unsigned long long)allowedFullScreenOrientations { return PortraitFullscreen() ? UIInterfaceOrientationMaskAllButUpsideDown; }
 %end
 
 // Disable Autoplay
 %hook YTPlaybackConfig
-- (void)setStartPlayback:(BOOL)arg1 { NoAutoPlay() ? %orig(NO) : %orig; }
+- (void)setStartPlayback:(BOOL)arg1 { NoAutoPlay() ? %orig(NO); }
 %end
+*/
 
 // Skip Content Warning (https://github.com/qnblackcat/uYouPlus/blob/main/uYouPlus.xm#L452-L454)
 %hook YTPlayabilityResolutionUserActionUIController
-- (void)showConfirmAlert { NoContentWarning() ? [self confirmAlertDidPressConfirm] : %orig; }
+- (void)showConfirmAlert { [self confirmAlertDidPressConfirm]; }
 %end
 
 %hook YTPlayabilityResolutionUserActionUIControllerImpl
-- (void)showConfirmAlert { NoContentWarning() ? [self confirmAlertDidPressConfirm] : %orig; }
+- (void)showConfirmAlert { [self confirmAlertDidPressConfirm]; }
 %end
 
 // Dont Show Related Videos on Finish
 %hook YTFullscreenEngagementOverlayController
-- (void)setRelatedVideosVisible:(BOOL)arg1 { NoRelatedVids() ? %orig(NO) : %orig; }
+- (void)setRelatedVideosVisible:(BOOL)arg1 { %orig(NO); }
 %end
 
 // Disable Snap To Chapter (https://github.com/qnblackcat/uYouPlus/blob/main/uYouPlus.xm#L457-464)
@@ -230,18 +233,18 @@
 
 // Disable Hints
 %hook YTSettings
-- (BOOL)areHintsDisabled { return NoHints() ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 { NoHints() ? %orig(YES) : %orig; }
+- (BOOL)areHintsDisabled { return YES; }
+- (void)setHintsDisabled:(BOOL)arg1 { %orig(YES); }
 %end
 
 %hook YTSettingsImpl
-- (BOOL)areHintsDisabled { return NoHints() ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 { NoHints() ? %orig(YES) : %orig; }
+- (BOOL)areHintsDisabled { return YES; }
+- (void)setHintsDisabled:(BOOL)arg1 { %orig(YES); }
 %end
 
 %hook YTUserDefaults
-- (BOOL)areHintsDisabled { return NoHints() ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 { NoHints() ? %orig(YES) : %orig; }
+- (BOOL)areHintsDisabled { return YES; }
+- (void)setHintsDisabled:(BOOL)arg1 { %orig(YES); }
 %end
 
 /* Wait for now
@@ -303,7 +306,7 @@
 // Remove "Play next in queue" from the menu @PoomSmart (https://github.com/qnblackcat/uYouPlus/issues/1138#issuecomment-1606415080)
 %hook YTMenuItemVisibilityHandler
 - (BOOL)shouldShowServiceItemRenderer:(YTIMenuConditionalServiceItemRenderer *)renderer {
-    if (RemovePlayNext() && renderer.icon.iconType == 251) {
+    if (renderer.icon.iconType == 251) {
         return NO;
     } return %orig;
 }
@@ -311,7 +314,7 @@
 
 %hook YTMenuItemVisibilityHandlerImpl
 - (BOOL)shouldShowServiceItemRenderer:(YTIMenuConditionalServiceItemRenderer *)renderer {
-    if (RemovePlayNext() && renderer.icon.iconType == 251) {
+    if (renderer.icon.iconType == 251) {
         return NO;
     } return %orig;
 }
@@ -319,16 +322,16 @@
 
 // Exit Fullscreen on Finish
 %hook YTWatchFlowController
-- (BOOL)shouldExitFullScreenOnFinish { return ExitFullscreen() ? YES : %orig; }
+- (BOOL)shouldExitFullScreenOnFinish { return YES; }
 %end
 
 %hook YTMainAppVideoPlayerOverlayViewController
 // Disable Double Tap To Seek
-- (BOOL)allowDoubleTapToSeekGestureRecognizer { return NoDoubleTapToSeek() ? NO : %orig; }
+- (BOOL)allowDoubleTapToSeekGestureRecognizer { return NO; }
 // Disable long hold
-- (BOOL)allowLongPressGestureRecognizerInView:(id)arg { return NoLongHold() ? NO : %orig; }
+- (BOOL)allowLongPressGestureRecognizerInView:(id)arg { return NO; }
 // Disable Two Finger Double Tap
-- (BOOL)allowTwoFingerDoubleTapGestureRecognizer { return NoTwoFingerSnapToChapter() ? NO : %orig; }
+- (BOOL)allowTwoFingerDoubleTapGestureRecognizer { return NO; }
 %end
 
 /*
@@ -353,7 +356,7 @@
 }
 %end
 */
-
+/*
 %hook YTPivotBarView
 - (void)setRenderer:(YTIPivotBarRenderer *)renderer {
     NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
@@ -373,17 +376,65 @@
         if ([pID isEqualToString:@"FEuploads"] && HideCreate()) {
             [indicesToRemove addIndex:i];
         }
-        if ([pID isEqualToString:@"FEsubscriptions"] && HideSubscript()) {
+        if ([pID isEqualToString:@"FEsubscriptions"]) {
             [indicesToRemove addIndex:i];
         }
-        if ([pID isEqualToString:@"FEwhat_to_watch"] && HideHome()) {
-            [indicesToRemove addIndex:i];
-        }
+        // if ([pID isEqualToString:@"FEwhat_to_watch"] && HideHome()) {
+        //     [indicesToRemove addIndex:i];
+        // }
     }
 
     // Remove them all at once so the layout doesn't break
     [items removeObjectsAtIndexes:indicesToRemove];
     
     %orig(renderer);
+}
+%end
+*/
+
+// Remove Tabs
+%hook YTPivotBarView
+- (void)setRenderer:(YTIPivotBarRenderer *)renderer {
+    NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
+
+    NSDictionary *identifiersToRemove = @{
+        // @"FEshorts",
+        @"FEsubscriptions",
+        @"FEuploads":,
+        // @"FElibrary":
+    };
+
+    for (NSString *identifier in identifiersToRemove) {
+        NSArray *removeValues = identifiersToRemove[identifier];
+        BOOL shouldRemoveItem = [removeValues containsObject:@(YES)];
+
+        NSUInteger index = [items indexOfObjectPassingTest:^BOOL(YTIPivotBarSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+            if ([identifier isEqualToString:@"FEuploads"]) {
+                return shouldRemoveItem && [[[renderer pivotBarIconOnlyItemRenderer] pivotIdentifier] isEqualToString:identifier];
+            } else {
+                return shouldRemoveItem && [[[renderer pivotBarItemRenderer] pivotIdentifier] isEqualToString:identifier];
+            }
+        }];
+
+        if (index != NSNotFound) {
+            [items removeObjectAtIndex:index];
+        }
+    }
+    %orig;
+}
+%end
+
+// Hide Tab Bar Indicators
+%hook YTPivotBarIndicatorView
+- (void)setFillColor:(id)arg1 { %orig([UIColor clearColor]); }
+- (void)setBorderColor:(id)arg1 { %orig([UIColor clearColor]); }
+%end
+
+// Hide Tab Labels
+%hook YTPivotBarItemView
+- (void)setRenderer:(YTIPivotBarRenderer *)renderer {
+    %orig;
+    [self.navigationButton setTitle:@"" forState:UIControlStateNormal];
+    [self.navigationButton setSizeWithPaddingAndInsets:NO];
 }
 %end
