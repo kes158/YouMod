@@ -1097,6 +1097,8 @@ NSBundle *YouModBundle() {
         RemoveAds: @YES,
         AllowsBackgroundPlayback: @YES,
         HideCreateButton: @YES,
+        HideCastButtonNav: @YES,
+        HideCastButtonPlayer: @YES,
     }];
     %init;
 }
