@@ -65,7 +65,7 @@
 "STOP_AUTOPLAY_VIDEO" = "Disable autoplay";
 "STOP_AUTOPLAY_VIDEO_DESC" = "Prevent the video from playing automatically when opening the video.";
 "HIDE_CONTENT_WARNING" = "Skip content warning";
-"HIDE_CONTENT_WARNING_DESC" = "Skip the sensitive content warning alert.";
+"HIDE_CONTENT_WARNING_DESC" = "Automatically skip the sensitive content warning alert.";
 "HIDE_RELATE_VIDEO" = "Hide related videos";
 "HIDE_RELATE_VIDEO_DESC" = "Hide the grid of suggested related videos that appears when a video finishes playing.";
 "AUTO_FULLSCREEN" = "Auto fullscreen";
