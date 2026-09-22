@@ -82,13 +82,9 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
 + (NSArray <NSNumber *> *)settingsCategoryOrder {
     NSArray <NSNumber *> *order = %orig;
-    NSUInteger insertIndex = [order indexOfObject:@(1)];
-    if (insertIndex != NSNotFound) {
-        NSMutableArray <NSNumber *> *mutableOrder = [order mutableCopy];
-        [mutableOrder insertObject:@(TweakSection) atIndex:insertIndex + 1];
-        order = mutableOrder.copy;
-    }
-    return order;
+    NSMutableArray <NSNumber *> *mutableOrder = [order mutableCopy];
+    [mutableOrder insertObject:@(TweakSection) atIndex:0];
+    return mutableOrder.copy;
 }
 
 %end
