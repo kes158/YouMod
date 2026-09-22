@@ -64,26 +64,14 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
     return [formatter stringFromByteCount:folderSize];
 }
 
-%hook YTSettingsGroupData
-
-- (NSArray <NSNumber *> *)orderedCategories {
-    if (self.type != 1 || class_getClassMethod(objc_getClass("YTSettingsGroupData"), @selector(tweaks))) {
-        return %orig;
-    }
-    NSArray *temp = %orig;
-    NSMutableArray *mutableCategories = temp.mutableCopy;
-    [mutableCategories insertObject:@(TweakSection) atIndex:0];
-    return mutableCategories.copy;
-}
-
-%end
-
 %hook YTAppSettingsPresentationData
 
 + (NSArray <NSNumber *> *)settingsCategoryOrder {
     NSArray <NSNumber *> *order = %orig;
     NSMutableArray <NSNumber *> *mutableOrder = [order mutableCopy];
-    [mutableOrder insertObject:@(TweakSection) atIndex:0];
+    if (![mutableOrder containsObject:@(TweakSection)]) {
+        [mutableOrder insertObject:@(TweakSection) atIndex:0];
+    }
     return mutableOrder.copy;
 }
 
