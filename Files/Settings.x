@@ -9,6 +9,18 @@
 #define TOSTRING(x) STRINGIFY(x)
 
 static const NSInteger TweakSection = 'ytmo';
+static const NSUInteger TweakGroup = 'ymod';
+
+@interface YTAppSettingsGroupPresentationData : NSObject
++ (NSArray *)orderedGroups;
+@end
+
+@interface YTSettingsGroupData (YouModNativeGroup)
+- (instancetype)initWithGroupType:(NSUInteger)type;
+- (NSUInteger)type;
+- (NSString *)titleForSettingGroupType:(NSUInteger)type;
+- (NSArray<NSNumber *> *)orderedCategoriesForGroupType:(NSUInteger)type;
+@end
 
 @interface YMSettingsItem : NSObject
 - (BOOL)isVisible;
@@ -73,6 +85,40 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         [mutableOrder insertObject:@(TweakSection) atIndex:0];
     }
     return mutableOrder.copy;
+}
+
+%end
+
+// Register YouMod as its own settings group, like native tweak sections such as
+// YTKACE. Adding only a category to the existing Tweaks group leaves it nested there.
+%hook YTAppSettingsGroupPresentationData
+
++ (NSArray *)orderedGroups {
+    NSArray *groups = %orig ?: @[];
+    for (YTSettingsGroupData *group in groups) {
+        if (group.type == TweakGroup) return groups;
+    }
+
+    YTSettingsGroupData *youModGroup = [[%c(YTSettingsGroupData) alloc] initWithGroupType:TweakGroup];
+    if (!youModGroup) return groups;
+
+    NSMutableArray *orderedGroups = [groups mutableCopy];
+    [orderedGroups insertObject:youModGroup atIndex:0];
+    return orderedGroups.copy;
+}
+
+%end
+
+%hook YTSettingsGroupData
+
+- (NSString *)titleForSettingGroupType:(NSUInteger)type {
+    if (type == TweakGroup) return TweakName;
+    return %orig;
+}
+
+- (NSArray<NSNumber *> *)orderedCategoriesForGroupType:(NSUInteger)type {
+    if (type == TweakGroup) return @[@(TweakSection)];
+    return %orig;
 }
 
 %end
