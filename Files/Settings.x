@@ -1,6 +1,7 @@
 // Settings.x
 // Thanks to the original codes from YTUHD by PoomSmart - https://github.com/PoomSmart/YTUHD/blob/0e735616fd8fc6546339da7fdc78466f16f23ffd/Settings.x
 #import "Headers.h"
+#import <objc/runtime.h>
 
 #define TweakName @"YouMod"
 
@@ -89,39 +90,68 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
 %end
 
-// Register YouMod as its own settings group, like native tweak sections such as
-// YTKACE. Adding only a category to the existing Tweaks group leaves it nested there.
-%hook YTAppSettingsGroupPresentationData
+// Install these hooks after YouTube exposes the settings group methods. The app
+// can add these selectors lazily, so a one-shot Logos hook may run too early.
+static IMP YMOriginalOrderedGroups = NULL;
+static IMP YMOriginalGroupTitle = NULL;
+static IMP YMOriginalGroupCategories = NULL;
+static BOOL YMNativeGroupHooksInstalled = NO;
+static NSUInteger YMNativeGroupHookAttempts = 0;
 
-+ (NSArray *)orderedGroups {
-    NSArray *groups = %orig ?: @[];
+static NSArray *YMOrderedSettingsGroups(id self, SEL cmd) {
+    NSArray *groups = YMOriginalOrderedGroups
+        ? ((id (*)(id, SEL))YMOriginalOrderedGroups)(self, cmd)
+        : @[];
     for (YTSettingsGroupData *group in groups) {
         if (group.type == TweakGroup) return groups;
     }
-
     YTSettingsGroupData *youModGroup = [[%c(YTSettingsGroupData) alloc] initWithGroupType:TweakGroup];
     if (!youModGroup) return groups;
-
-    NSMutableArray *orderedGroups = [groups mutableCopy];
+    NSMutableArray *orderedGroups = [groups mutableCopy] ?: [NSMutableArray array];
     [orderedGroups insertObject:youModGroup atIndex:0];
     return orderedGroups.copy;
 }
 
-%end
-
-%hook YTSettingsGroupData
-
-- (NSString *)titleForSettingGroupType:(NSUInteger)type {
+static NSString *YMSettingsGroupTitle(id self, SEL cmd, NSUInteger type) {
     if (type == TweakGroup) return TweakName;
-    return %orig;
+    return YMOriginalGroupTitle
+        ? ((id (*)(id, SEL, NSUInteger))YMOriginalGroupTitle)(self, cmd, type)
+        : nil;
 }
 
-- (NSArray<NSNumber *> *)orderedCategoriesForGroupType:(NSUInteger)type {
+static NSArray<NSNumber *> *YMOrderedGroupCategories(id self, SEL cmd, NSUInteger type) {
     if (type == TweakGroup) return @[@(TweakSection)];
-    return %orig;
+    return YMOriginalGroupCategories
+        ? ((id (*)(id, SEL, NSUInteger))YMOriginalGroupCategories)(self, cmd, type)
+        : @[];
 }
 
-%end
+static void YMAttemptInstallNativeGroupHooks(void) {
+    if (YMNativeGroupHooksInstalled) return;
+
+    Class presentationClass = objc_getClass("YTAppSettingsGroupPresentationData");
+    Class groupClass = objc_getClass("YTSettingsGroupData");
+    Method orderedGroups = presentationClass
+        ? class_getClassMethod(presentationClass, @selector(orderedGroups)) : NULL;
+    Method groupTitle = groupClass
+        ? class_getInstanceMethod(groupClass, @selector(titleForSettingGroupType:)) : NULL;
+    Method groupCategories = groupClass
+        ? class_getInstanceMethod(groupClass, @selector(orderedCategoriesForGroupType:)) : NULL;
+
+    if (orderedGroups && groupTitle && groupCategories) {
+        YMOriginalOrderedGroups = method_setImplementation(orderedGroups, (IMP)YMOrderedSettingsGroups);
+        YMOriginalGroupTitle = method_setImplementation(groupTitle, (IMP)YMSettingsGroupTitle);
+        YMOriginalGroupCategories = method_setImplementation(groupCategories, (IMP)YMOrderedGroupCategories);
+        YMNativeGroupHooksInstalled = YES;
+        return;
+    }
+
+    if (++YMNativeGroupHookAttempts < 60) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+            YMAttemptInstallNativeGroupHooks();
+        });
+    }
+}
 
 %hook YTSettingsSectionItemManager
 
@@ -679,4 +709,5 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         ForwardSeconds: @10.0,
     }];
     %init;
+    YMAttemptInstallNativeGroupHooks();
 }
